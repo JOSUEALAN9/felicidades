@@ -1,19 +1,263 @@
-<div style="position: relative; height: 200px; width: 100%; margin-top: 50px; text-align: center;">
-  <h1 style="color: black;">¿Quieres salir conmigo?</h1>
-  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: green; padding: 20px; color: white; font-size: 24px; cursor: pointer;" onclick="mostrarMensaje('Sabía que dirías que sí')">Sí</div>
-  <div class="no-div" style="position: absolute; top: 50%; left: 60%; transform: translate(-50%, -50%); background-color: red; padding: 20px; color: white; font-size: 24px; cursor: pointer;" onmouseover="moverNo()">No</div>
-</div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Ti</title>
+    <style>
+        /* --- ESTILOS UX/UI (CSS) --- */
+        :root {
+            --bg-color: #0d0d0d;
+            --surface: #1a1a1a;
+            --primary: #ff4d4d; /* Un rojo elegante, puedes cambiarlo al color que más le guste a ella */
+            --text-main: #ffffff;
+            --text-sec: #a0a0a0;
+        }
 
-<script>
-  function moverNo() {
-    var noDiv = document.querySelector(".no-div");
-    noDiv.style.position = "absolute";
-    noDiv.style.left = Math.floor(Math.random() * 80) + 10 + "%";
-    noDiv.style.top = Math.floor(Math.random() * 80) + 10 + "%";
-    noDiv.style.transition = "left 0.5s, top 0.5s";
-  }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-  function mostrarMensaje(mensaje) {
-    alert(mensaje);
-  }
-</script>
+        .player-card {
+            background-color: var(--surface);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+
+        .album-art {
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            transition: all 0.5s ease;
+        }
+
+        /* Animación de latido sutil cuando la música suena */
+        .album-art.playing {
+            box-shadow: 0 0 25px var(--primary);
+            transform: scale(1.02);
+        }
+
+        .album-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .track-info {
+            text-align: center;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .track-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .track-artist {
+            font-size: 16px;
+            color: var(--text-sec);
+            margin: 0;
+        }
+
+        .progress-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: var(--text-sec);
+        }
+
+        .seek-bar {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .seek-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .seek-bar::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.4);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* La carta secreta que se revela */
+        .secret-message {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .secret-message.reveal {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 500px; /* Suficiente espacio para el texto */
+            margin-top: 10px;
+        }
+
+        .secret-message h3 {
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .secret-message p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #dcdcdc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-card">
+        <div class="album-art" id="album-cover">
+            <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Portada">
+        </div>
+
+        <div class="track-info">
+            <h2 class="track-title">Feliz Cumpleaños</h2>
+            <p class="track-artist">Acústico • Alan</p>
+        </div>
+
+        <div class="progress-container">
+            <span id="current-time">0:00</span>
+            <input type="range" class="seek-bar" id="seek-bar" value="0" step="1">
+            <span id="duration">0:00</span>
+        </div>
+
+        <div class="controls">
+            <button class="play-btn" id="play-btn">▶</button>
+        </div>
+
+        <div class="secret-message" id="secret-message">
+            <h3>Para la cumpleañera...</h3>
+            <p>Quería regalarte algo diferente este año. Cada nota de esta canción y cada línea de este reproductor las armé pensando en ti. Espero que tengas el cumpleaños más hermoso. ¡Felicidades!</p>
+        </div>
+
+        <audio id="audio-track" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    </div>
+
+    <script>
+        const audio = document.getElementById('audio-track');
+        const playBtn = document.getElementById('play-btn');
+        const seekBar = document.getElementById('seek-bar');
+        const currentTimeEl = document.getElementById('current-time');
+        const durationEl = document.getElementById('duration');
+        const albumCover = document.getElementById('album-cover');
+        const secretMessage = document.getElementById('secret-message');
+
+        // Formatear tiempo (ej. 65 seg -> 1:05)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Cargar duración total al iniciar
+        audio.addEventListener('loadedmetadata', () => {
+            seekBar.max = audio.duration;
+            durationEl.textContent = formatTime(audio.duration);
+        });
+
+        // Botón de Play / Pausa
+        playBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerHTML = '⏸'; // Cambia ícono a pausa
+                albumCover.classList.add('playing'); // Agrega el brillo a la portada
+                secretMessage.classList.add('reveal'); // Despliega la carta
+            } else {
+                audio.pause();
+                playBtn.innerHTML = '▶'; // Cambia ícono a play
+                albumCover.classList.remove('playing'); // Quita el brillo
+            }
+        });
+
+        // Actualizar barra de progreso y tiempo actual mientras suena
+        audio.addEventListener('timeupdate', () => {
+            seekBar.value = audio.currentTime;
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        });
+
+        // Permitir adelantar o atrasar la canción moviendo la barra
+        seekBar.addEventListener('input', () => {
+            audio.currentTime = seekBar.value;
+        });
+
+        // Cuando la canción termina, resetear reproductor
+        audio.addEventListener('ended', () => {
+            playBtn.innerHTML = '▶';
+            albumCover.classList.remove('playing');
+            seekBar.value = 0;
+            currentTimeEl.textContent = "0:00";
+        });
+    </script>
+</body>
+</html>
